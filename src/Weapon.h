@@ -3,8 +3,14 @@
 
 #include "MotorSystem.h"
 
+#include <Arduino.h>
+
+#define WEAPON_ENABLE_PIN 4
+#define WEAPON_CONTROL_PIN 5
+
 class Weapon : public MotorSystem {
 public:
+	Weapon();
 	void arm() override;
 	void disarm() override;
 	void enable() override;
@@ -12,7 +18,7 @@ public:
 	bool isArmed() override;
 	bool isEnabled() override;
 
-	void setSpeed(int value);
+	void setThrottle(unsigned long value);
 };
 
 #endif

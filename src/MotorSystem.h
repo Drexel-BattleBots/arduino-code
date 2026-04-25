@@ -13,5 +13,6 @@ public:
 protected:
 	bool armed = false;
 	bool enabled = false;
+};
 
 #endif
