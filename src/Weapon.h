@@ -5,12 +5,9 @@
 
 #include <Arduino.h>
 
-#define WEAPON_ENABLE_PIN 4
-#define WEAPON_CONTROL_PIN 5
-
 class Weapon : public MotorSystem {
 public:
-	Weapon();
+	Weapon(int enablePin, int controlPin);
 	void arm() override;
 	void disarm() override;
 	void enable() override;

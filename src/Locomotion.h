@@ -5,12 +5,9 @@
 
 #include <Arduino.h>
 
-#define LOCOMOTION_ENABLE_PIN 2
-#define LOCOMOTION_CONTROL_PIN 3
-
 class Locomotion : public MotorSystem {
 public:
-	Locomotion();
+	Locomotion(int enablePin, int controlPin);
 	void arm() override;
 	void disarm() override;
 	void enable() override;

@@ -1,25 +1,54 @@
 #include "src/Locomotion.h"
 #include "src/Weapon.h"
 #include "src/Receiver.h"
+#include "src/helpers.h"
+
+/* PIN DEFINITIONS */
+
+#define WEAPON_ARM_PIN 2
+#define LOCOMOTION_ARM_PIN 3
+
+#define WEAPON_ENABLE_PIN 4
+#define WEAPON_CONTROL_PIN 5
+#define LEFT_SHUFFLER_ENABLE_PIN 6
+#define LEFT_SHUFFLER_CONTROL_PIN 7
+#define RIGHT_SHUFFLER_ENABLE_PIN 8
+#define RIGHT_SHUFFLER_CONTROL_PIN 9
+
+/* CHANNEL DEFINITIONS */
 
 #define WEAPON_THROTTLE_CHANNEL 2
 #define LOCOMOTION_THROTTLE_CHANNEL 3
-#define WEAPON_TOGGLE_CHANNEL 6
-#define WEAPON_TOGGLE_PIN 2
 #define LOCOMOTION_TOGGLE_CHANNEL 5
+#define WEAPON_TOGGLE_CHANNEL 6
 
-Locomotion locomotion{};
-Weapon weapon{};
+/* PWM SETTINGS */
+
+#define PWM_BOUNDARY 1
+
+Locomotion leftShuffler{LEFT_SHUFFLER_ENABLE_PIN, LEFT_SHUFFLER_CONTROL_PIN}; // enable pin, control pin
+Locomotion rightShuffler{RIGHT_SHUFFLER_ENABLE_PIN, RIGHT_SHUFFLER_CONTROL_PIN}; // enable pin, control pin
+Weapon weapon{WEAPON_ENABLE_PIN, WEAPON_CONTROL_PIN};
 Receiver receiver{};
 
 volatile uint32_t weaponToggleStartTime = 0;
 volatile uint32_t weaponTogglePulseWidth = 1500;
+volatile uint32_t locomotionToggleStartTime = 0;
+volatile uint32_t locomotionTogglePulseWidth = 1500;
 
 void isrWeaponTogglePulse() {
-	if (digitalRead(WEAPON_TOGGLE_PIN) == HIGH) {
+	if (digitalRead(WEAPON_ARM_PIN) == HIGH) {
 		weaponToggleStartTime = micros();
 	} else {
 		weaponTogglePulseWidth = micros() - weaponToggleStartTime;
+	}
+}
+
+void isrLocomotionTogglePulse() {
+	if (digitalRead(LOCOMOTION_ARM_PIN) == HIGH) {
+		locomotionToggleStartTime = micros();
+	} else {
+		locomotionTogglePulseWidth = micros() - locomotionToggleStartTime;
 	}
 }
 
@@ -27,27 +56,48 @@ void setup() {
 	Serial.begin(9600);
 	Serial.println("Serial Monitor Initialized");
 
-	if (digitalPinToInterrupt(WEAPON_TOGGLE_PIN) != -1) { // Check if pin is interrupt-capable
-		Serial.println("ALL GOOD");
-		pinMode(WEAPON_TOGGLE_PIN, INPUT);
-		attachInterrupt(digitalPinToInterrupt(WEAPON_TOGGLE_PIN), isrWeaponTogglePulse, CHANGE);
+	if (digitalPinToInterrupt(WEAPON_ARM_PIN) != -1) { // Check if pin is interrupt-capable
+		Serial.println("Set up weapon toggle interrupt");
+		pinMode(WEAPON_ARM_PIN, INPUT);
+		attachInterrupt(digitalPinToInterrupt(WEAPON_ARM_PIN), isrWeaponTogglePulse, CHANGE);
 	} else {
-		Serial.println("NOT GOOD");
+		Serial.println("Failed to set up weapon toggle interrupt");
+	}
+
+	if (digitalPinToInterrupt(LOCOMOTION_ARM_PIN) != -1) { // Check if pin is interrupt-capable
+		Serial.println("Set up locomotion toggle interrupt");
+		pinMode(LOCOMOTION_ARM_PIN, INPUT);
+		attachInterrupt(digitalPinToInterrupt(LOCOMOTION_ARM_PIN), isrLocomotionTogglePulse, CHANGE);
+	} else {
+		Serial.println("Failed to set up locomotion toggle interrupt");
 	}
 }
 
 void loop() {
 	bool armWeapon = (weaponTogglePulseWidth > 1750);
+	bool armLocomotion = (locomotionTogglePulseWidth > 1750);
 
 	if (armWeapon && !weapon.isArmed()) {
 		weapon.arm();
 		weapon.enable();
 		Serial.println("Weapon Armed & Enabled");
 	} else if (!armWeapon && weapon.isArmed()) {
+		weapon.setThrottle(0);
 		weapon.disarm();
 		weapon.disable();
 		Serial.println("Weapon Disarmed & Disabled");
 	}
+
+	// if (armLocomotion && !locomotion.isArmed()) {
+	// 	locomotion.arm();
+	// 	locomotion.enable();
+	// 	Serial.println("Locomotion Armed & Enabled");
+	// } else if (!armLocomotion && locomotion.isArmed()) {
+	// 	locomotion.setThrottle(0);
+	// 	locomotion.disarm();
+	// 	locomotion.disable();
+	// 	Serial.println("Locomotion Disarmed & Disabled");
+	// }
 
 	if (Serial.available()) {
 		// Read incoming data and update control values
@@ -85,18 +135,20 @@ void loop() {
 		}
 	}
 
-		if (locomotion.isEnabled()) {
-			unsigned long locomotion_throttle = receiver.readChannelRaw(LOCOMOTION_THROTTLE_CHANNEL);
-			Serial.print("Locomotion Throttle: ");
-			Serial.println(locomotion_throttle);
-			locomotion.setThrottle(locomotion_throttle);
-		} else {
-			//Serial.println("Weapon is disabled, skipping throttle update");
-		}
+	if (locomotion.isEnabled()) {
+		unsigned long locomotion_throttle = receiver.readChannel(LOCOMOTION_THROTTLE_CHANNEL);
+		locomotion_throttle = chokeServoPWM(locomotion_throttle, 255 / 2, PWM_BOUNDARY);
+		Serial.print("Locomotion Throttle: ");
+		Serial.println(locomotion_throttle);
+		locomotion.setThrottle(locomotion_throttle);
+	} else {
+		//Serial.println("Weapon is disabled, skipping throttle update");
+	}
 
 	//locomotion.setThrottle(receiver.readChannel(LOCOMOTION_CONTROL_PIN));
 	if (weapon.isEnabled()) {
 		unsigned long weapon_throttle = receiver.readChannelRaw(WEAPON_THROTTLE_CHANNEL);
+		//weapon_throttle = chokeServoPWM(weapon_throttle, MID_PULSE_TIME, PWM_BOUNDARY);
 		Serial.print("Weapon Throttle: ");
 		Serial.println(weapon_throttle);
 		weapon.setThrottle(weapon_throttle);

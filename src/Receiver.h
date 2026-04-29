@@ -12,6 +12,7 @@
 
 #define MIN_PULSE_TIME 1100
 #define MAX_PULSE_TIME 1900
+#define MID_PULSE_TIME 1500
 
 class Receiver {
 public:

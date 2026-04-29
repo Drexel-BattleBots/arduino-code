@@ -1,22 +1,22 @@
 #include "Locomotion.h"
 
-Locomotion::Locomotion() {
-	pinMode(LOCOMOTION_ENABLE_PIN, OUTPUT);
-	digitalWrite(LOCOMOTION_ENABLE_PIN, LOW);
-	pinMode(LOCOMOTION_CONTROL_PIN, OUTPUT);
-	digitalWrite(LOCOMOTION_CONTROL_PIN, LOW);
+Locomotion::Locomotion(int enablePin, int controlPin) {
+	pinMode(enablePin, OUTPUT);
+	digitalWrite(enablePin, LOW);
+	pinMode(controlPin, OUTPUT);
+	digitalWrite(controlPin, LOW);
 }
 
 void Locomotion::arm() {
-	digitalWrite(LOCOMOTION_ENABLE_PIN, HIGH);
+	digitalWrite(enablePin, HIGH);
 }
 
 void Locomotion::disarm() {
-	digitalWrite(LOCOMOTION_ENABLE_PIN, LOW);
+	digitalWrite(enablePin, LOW);
 }
 
 bool Locomotion::isArmed() {
-	return digitalRead(LOCOMOTION_ENABLE_PIN) == HIGH;
+	return digitalRead(enablePin) == HIGH;
 }
 
 void Locomotion::enable() {
@@ -35,5 +35,11 @@ void Locomotion::setThrottle(int value) {
 	if (!enabled)
 		return;
 
-	analogWrite(LOCOMOTION_CONTROL_PIN, value);
+	analogWrite(controlPin, value);
+}
+
+void Locomotion::setSteering(int value) {
+	if (!enabled)
+		return;
+
 }

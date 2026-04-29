@@ -1,23 +1,23 @@
 #include "Weapon.h"
 
-Weapon::Weapon() {
-	pinMode(WEAPON_ENABLE_PIN, OUTPUT);
-	digitalWrite(WEAPON_ENABLE_PIN, LOW);
+Weapon::Weapon(int enablePin, int controlPin) {
+	pinMode(enablePin, OUTPUT);
+	digitalWrite(enablePin, LOW);
 
-	pinMode(WEAPON_CONTROL_PIN, OUTPUT);
-	digitalWrite(WEAPON_CONTROL_PIN, LOW);
+	pinMode(controlPin, OUTPUT);
+	digitalWrite(controlPin, LOW);
 }
 
 void Weapon::arm() {
-	digitalWrite(WEAPON_ENABLE_PIN, HIGH);
+	digitalWrite(enablePin, HIGH);
 }
 
 void Weapon::disarm() {
-	digitalWrite(WEAPON_ENABLE_PIN, LOW);
+	digitalWrite(enablePin, LOW);
 }
 
 bool Weapon::isArmed() {
-	return digitalRead(WEAPON_ENABLE_PIN) == HIGH;
+	return digitalRead(enablePin) == HIGH;
 }
 
 void Weapon::enable() {
@@ -26,7 +26,7 @@ void Weapon::enable() {
 
 void Weapon::disable() {
 	enabled = false;
-	digitalWrite(WEAPON_CONTROL_PIN, LOW); //TODO: REMOVE LATER
+	digitalWrite(controlPin, LOW); //TODO: REMOVE LATER
 }
 
 bool Weapon::isEnabled() {
@@ -37,9 +37,8 @@ void Weapon::setThrottle(unsigned long value) {
 	if (!enabled)
 		return;
 
-	digitalWrite(WEAPON_CONTROL_PIN, HIGH);
+	digitalWrite(controlPin, HIGH);
 	delayMicroseconds(value);
-	digitalWrite(WEAPON_CONTROL_PIN, LOW);
+	digitalWrite(controlPin, LOW);
 	delayMicroseconds(20000 - value);
-	//analogWrite(WEAPON_CONTROL_PIN, value);
 }
