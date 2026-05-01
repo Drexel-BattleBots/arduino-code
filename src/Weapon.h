@@ -16,6 +16,10 @@ public:
 	bool isEnabled() override;
 
 	void setThrottle(unsigned long value);
+
+private:
+	int enablePin;
+	int controlPin;
 };
 
 #endif

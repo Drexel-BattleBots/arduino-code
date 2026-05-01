@@ -10,10 +10,9 @@
 
 #define WEAPON_ENABLE_PIN 4
 #define WEAPON_CONTROL_PIN 5
-#define LEFT_SHUFFLER_ENABLE_PIN 6
+#define LOCOMOTION_ENABLE_PIN 6
 #define LEFT_SHUFFLER_CONTROL_PIN 7
-#define RIGHT_SHUFFLER_ENABLE_PIN 8
-#define RIGHT_SHUFFLER_CONTROL_PIN 9
+#define RIGHT_SHUFFLER_CONTROL_PIN 8
 
 /* CHANNEL DEFINITIONS */
 
@@ -26,8 +25,7 @@
 
 #define PWM_BOUNDARY 1
 
-Locomotion leftShuffler{LEFT_SHUFFLER_ENABLE_PIN, LEFT_SHUFFLER_CONTROL_PIN}; // enable pin, control pin
-Locomotion rightShuffler{RIGHT_SHUFFLER_ENABLE_PIN, RIGHT_SHUFFLER_CONTROL_PIN}; // enable pin, control pin
+Locomotion locomotion{LOCOMOTION_ENABLE_PIN, LEFT_SHUFFLER_CONTROL_PIN, RIGHT_SHUFFLER_CONTROL_PIN};
 Weapon weapon{WEAPON_ENABLE_PIN, WEAPON_CONTROL_PIN};
 Receiver receiver{};
 
@@ -88,16 +86,16 @@ void loop() {
 		Serial.println("Weapon Disarmed & Disabled");
 	}
 
-	// if (armLocomotion && !locomotion.isArmed()) {
-	// 	locomotion.arm();
-	// 	locomotion.enable();
-	// 	Serial.println("Locomotion Armed & Enabled");
-	// } else if (!armLocomotion && locomotion.isArmed()) {
-	// 	locomotion.setThrottle(0);
-	// 	locomotion.disarm();
-	// 	locomotion.disable();
-	// 	Serial.println("Locomotion Disarmed & Disabled");
-	// }
+	if (armLocomotion && !locomotion.isArmed()) {
+		locomotion.arm();
+		locomotion.enable();
+		Serial.println("Locomotion Armed & Enabled");
+	} else if (!armLocomotion && locomotion.isArmed()) {
+		// locomotion.setThrottle(0);
+		locomotion.disarm();
+		locomotion.disable();
+		Serial.println("Locomotion Disarmed & Disabled");
+	}
 
 	if (Serial.available()) {
 		// Read incoming data and update control values
@@ -136,8 +134,11 @@ void loop() {
 	}
 
 	if (locomotion.isEnabled()) {
-		unsigned long locomotion_throttle = receiver.readChannel(LOCOMOTION_THROTTLE_CHANNEL);
+		unsigned long locomotion_throttle = receiver.readChannelRaw(LOCOMOTION_THROTTLE_CHANNEL);
 		locomotion_throttle = chokeServoPWM(locomotion_throttle, 255 / 2, PWM_BOUNDARY);
+		if (locomotion_throttle > 1450 && locomotion_throttle < 1550) {
+			locomotion_throttle = 1500; // deadzone
+		}
 		Serial.print("Locomotion Throttle: ");
 		Serial.println(locomotion_throttle);
 		locomotion.setThrottle(locomotion_throttle);

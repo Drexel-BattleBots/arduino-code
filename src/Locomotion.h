@@ -5,9 +5,18 @@
 
 #include <Arduino.h>
 
+class Shuffler {
+public:
+	Shuffler(int controlPin);
+	void setThrottle(int value);
+
+private:
+	int controlPin;
+};
+
 class Locomotion : public MotorSystem {
 public:
-	Locomotion(int enablePin, int controlPin);
+	Locomotion(int enablePin, int leftControlPin, int rightControlPin);
 	void arm() override;
 	void disarm() override;
 	void enable() override;
@@ -17,6 +26,12 @@ public:
 
 	void setThrottle(int value);
 	void setSteering(int value);
+
+private:
+	int enablePin;
+	Shuffler leftShuffler;
+	Shuffler rightShuffler;
+	bool enabled;
 };
 
 #endif

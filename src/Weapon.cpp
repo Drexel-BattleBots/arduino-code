@@ -1,11 +1,12 @@
 #include "Weapon.h"
 
-Weapon::Weapon(int enablePin, int controlPin) {
-	pinMode(enablePin, OUTPUT);
-	digitalWrite(enablePin, LOW);
+Weapon::Weapon(int enablePin, int controlPin)
+	: enablePin(enablePin), controlPin(controlPin) {
+	pinMode(this->enablePin, OUTPUT);
+	digitalWrite(this->enablePin, LOW);
 
-	pinMode(controlPin, OUTPUT);
-	digitalWrite(controlPin, LOW);
+	pinMode(this->controlPin, OUTPUT);
+	digitalWrite(this->controlPin, LOW);
 }
 
 void Weapon::arm() {
