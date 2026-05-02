@@ -1,23 +1,25 @@
 #include "Weapon.h"
 
-Weapon::Weapon() {
-	pinMode(WEAPON_ENABLE_PIN, OUTPUT);
-	digitalWrite(WEAPON_ENABLE_PIN, LOW);
-
-	pinMode(WEAPON_CONTROL_PIN, OUTPUT);
-	digitalWrite(WEAPON_CONTROL_PIN, LOW);
+Weapon::Weapon(int enablePin, int controlPin)
+	: enablePin(enablePin), controlPin(controlPin) {
+	pinMode(this->enablePin, OUTPUT);
+	digitalWrite(this->enablePin, LOW);
 }
 
 void Weapon::arm() {
-	digitalWrite(WEAPON_ENABLE_PIN, HIGH);
+	digitalWrite(enablePin, HIGH);
+	controlServo.attach(controlPin);
+	controlServo.writeMicroseconds(1000); // minimum throttle for ESC arming
 }
 
 void Weapon::disarm() {
-	digitalWrite(WEAPON_ENABLE_PIN, LOW);
+	controlServo.writeMicroseconds(1000);
+	controlServo.detach();
+	digitalWrite(enablePin, LOW);
 }
 
 bool Weapon::isArmed() {
-	return digitalRead(WEAPON_ENABLE_PIN) == HIGH;
+	return digitalRead(enablePin) == HIGH;
 }
 
 void Weapon::enable() {
@@ -26,7 +28,7 @@ void Weapon::enable() {
 
 void Weapon::disable() {
 	enabled = false;
-	digitalWrite(WEAPON_CONTROL_PIN, LOW); //TODO: REMOVE LATER
+	controlServo.writeMicroseconds(1000);
 }
 
 bool Weapon::isEnabled() {
@@ -37,9 +39,5 @@ void Weapon::setThrottle(unsigned long value) {
 	if (!enabled)
 		return;
 
-	digitalWrite(WEAPON_CONTROL_PIN, HIGH);
-	delayMicroseconds(value);
-	digitalWrite(WEAPON_CONTROL_PIN, LOW);
-	delayMicroseconds(20000 - value);
-	//analogWrite(WEAPON_CONTROL_PIN, value);
+	controlServo.writeMicroseconds(value);
 }

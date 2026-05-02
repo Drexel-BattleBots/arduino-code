@@ -4,13 +4,26 @@
 #include "MotorSystem.h"
 
 #include <Arduino.h>
+#include <Servo.h>
 
-#define LOCOMOTION_ENABLE_PIN 2
-#define LOCOMOTION_CONTROL_PIN 3
+class Shuffler {
+public:
+	Shuffler(int throttlePin, int steerPin);
+	void attach();
+	void detach();
+	void setThrottle(int value);
+	void setSteering(int value);
+
+private:
+	int throttlePin;
+	int steerPin;
+	Servo throttleServo;
+	Servo steerServo;
+};
 
 class Locomotion : public MotorSystem {
 public:
-	Locomotion();
+	Locomotion(int enablePin, Shuffler &leftShuffler, Shuffler &rightShuffler);
 	void arm() override;
 	void disarm() override;
 	void enable() override;
@@ -20,6 +33,12 @@ public:
 
 	void setThrottle(int value);
 	void setSteering(int value);
+
+private:
+	int enablePin;
+	Shuffler &leftShuffler;
+	Shuffler &rightShuffler;
+	bool enabled;
 };
 
 #endif
