@@ -1,20 +1,29 @@
 #include "Locomotion.h"
 
-Shuffler::Shuffler(int controlPin)
-	: controlPin(controlPin) {
-	pinMode(this->controlPin, OUTPUT);
-	digitalWrite(this->controlPin, LOW);
+Shuffler::Shuffler(int throttlePin, int steerPin)
+	: throttlePin(throttlePin), steerPin(steerPin) {
+	pinMode(this->throttlePin, OUTPUT);
+	pinMode(this->steerPin, OUTPUT);
+	digitalWrite(this->throttlePin, LOW);
+	digitalWrite(this->steerPin, LOW);
 }
 
 void Shuffler::setThrottle(int value) {
-	digitalWrite(controlPin, HIGH);
+	digitalWrite(throttlePin, HIGH);
 	delayMicroseconds(value);
-	digitalWrite(controlPin, LOW);
+	digitalWrite(throttlePin, LOW);
 	delayMicroseconds(20000 - value);
 }
 
-Locomotion::Locomotion(int enablePin, int leftControlPin, int rightControlPin)
-	: enablePin(enablePin), leftShuffler(leftControlPin), rightShuffler(rightControlPin), enabled(false) {
+void Shuffler::setSteering(int value) {
+	digitalWrite(steerPin, HIGH);
+	delayMicroseconds(value);
+	digitalWrite(steerPin, LOW);
+	delayMicroseconds(20000 - value);
+}
+
+Locomotion::Locomotion(int enablePin, Shuffler leftShuffler, Shuffler rightShuffler)
+	: enablePin(enablePin), leftShuffler(leftShuffler), rightShuffler(rightShuffler), enabled(false) {
 	pinMode(enablePin, OUTPUT);
 	digitalWrite(enablePin, LOW);
 }
@@ -56,7 +65,16 @@ void Locomotion::setThrottle(int value) {
 	rightShuffler.setThrottle(rightValue);
 }
 
-void Locomotion::setSteering(int value) {
+void Locomotion::setSteering(int value) { //TODO: YOU MIGHT BE ABLE TO JUST BE GOOD WITH ONE VALUE;
+	// NOT BOTH LEFT AND RIGHT SEPARATE
 	if (!enabled)
 		return;
+
+	int leftValue = constrain(value, 1000, 2000);
+	int rightValue = 3000 - leftValue; // mirror around 1500us: 1750 -> 1250
+	rightValue = constrain(rightValue, 1000, 2000);
+
+	leftShuffler.setSteering(leftValue);
+
+	rightShuffler.setSteering(rightValue);
 }

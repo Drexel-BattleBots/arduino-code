@@ -11,13 +11,16 @@
 #define WEAPON_ENABLE_PIN 4
 #define WEAPON_CONTROL_PIN 5
 #define LOCOMOTION_ENABLE_PIN 6
-#define LEFT_SHUFFLER_CONTROL_PIN 7
-#define RIGHT_SHUFFLER_CONTROL_PIN 8
+#define LEFT_SHUFFLER_THROTTLE_PIN 7
+#define LEFT_SHUFFLER_STEER_PIN 9
+#define RIGHT_SHUFFLER_THROTTLE_PIN 8
+#define RIGHT_SHUFFLER_STEER_PIN 10
 
 /* CHANNEL DEFINITIONS */
 
 #define WEAPON_THROTTLE_CHANNEL 2
 #define LOCOMOTION_THROTTLE_CHANNEL 3
+#define LOCOMOTION_STEERING_CHANNEL 4
 #define LOCOMOTION_TOGGLE_CHANNEL 5
 #define WEAPON_TOGGLE_CHANNEL 6
 
@@ -25,7 +28,9 @@
 
 #define PWM_BOUNDARY 1
 
-Locomotion locomotion{LOCOMOTION_ENABLE_PIN, LEFT_SHUFFLER_CONTROL_PIN, RIGHT_SHUFFLER_CONTROL_PIN};
+Shuffler leftShuffler{LEFT_SHUFFLER_THROTTLE_PIN, LEFT_SHUFFLER_STEER_PIN};
+Shuffler rightShuffler{RIGHT_SHUFFLER_THROTTLE_PIN, RIGHT_SHUFFLER_STEER_PIN};
+Locomotion locomotion{LOCOMOTION_ENABLE_PIN, leftShuffler, rightShuffler};
 Weapon weapon{WEAPON_ENABLE_PIN, WEAPON_CONTROL_PIN};
 Receiver receiver{};
 
@@ -142,6 +147,15 @@ void loop() {
 		Serial.print("Locomotion Throttle: ");
 		Serial.println(locomotion_throttle);
 		locomotion.setThrottle(locomotion_throttle);
+
+		unsigned long locomotion_steering = receiver.readChannelRaw(LOCOMOTION_STEERING_CHANNEL);
+		locomotion_steering = chokeServoPWM(locomotion_steering, 255 / 2, PWM_BOUNDARY);
+		if (locomotion_steering > 1450 && locomotion_steering < 1550) {
+			locomotion_steering = 1500; // deadzone
+		}
+		//Serial.print("Locomotion Steering: ");
+		//Serial.println(locomotion_steering);
+		//locomotion.setSteering(locomotion_steering);
 	} else {
 		//Serial.println("Weapon is disabled, skipping throttle update");
 	}

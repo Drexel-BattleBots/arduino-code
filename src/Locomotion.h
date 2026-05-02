@@ -7,16 +7,18 @@
 
 class Shuffler {
 public:
-	Shuffler(int controlPin);
+	Shuffler(int throttlePin, int steerPin);
 	void setThrottle(int value);
+	void setSteering(int value);
 
 private:
-	int controlPin;
+	int throttlePin;
+	int steerPin;
 };
 
 class Locomotion : public MotorSystem {
 public:
-	Locomotion(int enablePin, int leftControlPin, int rightControlPin);
+	Locomotion(int enablePin, Shuffler leftShuffler, Shuffler rightShuffler);
 	void arm() override;
 	void disarm() override;
 	void enable() override;
