@@ -26,7 +26,7 @@
 
 /* PWM SETTINGS */
 
-#define PWM_BOUNDARY 1
+#define PWM_BOUNDARY 0.8
 
 Shuffler leftShuffler{LEFT_SHUFFLER_THROTTLE_PIN, LEFT_SHUFFLER_STEER_PIN};
 Shuffler rightShuffler{RIGHT_SHUFFLER_THROTTLE_PIN, RIGHT_SHUFFLER_STEER_PIN};
@@ -42,6 +42,7 @@ volatile uint32_t locomotionTogglePulseWidth = 1500;
 unsigned long lastPrintTime = 0;
 #define PRINT_INTERVAL_MS 200
 
+
 void isrWeaponTogglePulse() {
 	if (digitalRead(WEAPON_ARM_PIN) == HIGH) {
 		weaponToggleStartTime = micros();
@@ -55,6 +56,76 @@ void isrLocomotionTogglePulse() {
 		locomotionToggleStartTime = micros();
 	} else {
 		locomotionTogglePulseWidth = micros() - locomotionToggleStartTime;
+	}
+}
+
+void setMovement() {
+	if (locomotion.isEnabled()) {
+		unsigned long locomotion_throttle = receiver.readChannelRaw(LOCOMOTION_THROTTLE_CHANNEL);
+
+		if (locomotion_throttle == 0) { // FAILSAFE (NO SIGNAL FROM CONTROLLER; GO NEUTRAL)
+			locomotion.setThrottle(1500);
+			Serial.println("!!!LOCOMOTION THROTTLE FAILSAFE!!!");
+			return;
+		}
+		locomotion_throttle = chokeServoPWM(locomotion_throttle, 1500, PWM_BOUNDARY);
+		if (locomotion_throttle > 1450 && locomotion_throttle < 1550) {
+    	locomotion_throttle = 1500; // deadzone
+		}
+
+		Serial.print("Locomotion Throttle: ");
+		Serial.println(locomotion_throttle);
+
+		unsigned long locomotion_steering = receiver.readChannelRaw(LOCOMOTION_STEERING_CHANNEL);
+
+		if (locomotion_steering == 0) {
+			locomotion.setThrottle(1500); // FAILSAFE FOR STEERING TOO
+			Serial.println("!!!LOCOMOTION STEERING FAILSAFE!!!");
+			return;
+		}
+
+		locomotion_steering = chokeServoPWM(locomotion_steering, 1500, PWM_BOUNDARY);
+		if (locomotion_steering > 1450 && locomotion_steering < 1550) {
+			locomotion_steering = 1500; // deadzone
+		}
+
+		Serial.print("Locomotion Steering: ");
+		Serial.println(locomotion_steering);
+		//locomotion.setSteering(locomotion_steering);
+
+		int norm_throttle = 1500 - locomotion_throttle;
+		int norm_steering = locomotion_steering - 1500;
+
+		int left = 1500 + (norm_throttle + norm_steering);
+		int right = 1500 + (norm_throttle - norm_steering);
+
+		right = 3000 - right;
+
+		left = constrain(left, 1000, 2000);
+		right = constrain(right, 1000, 2000);
+
+		leftShuffler.setThrottle(left);
+		rightShuffler.setThrottle(right);
+	}
+}
+
+void setWeapon() {
+	if (weapon.isEnabled()) {
+		unsigned long weapon_throttle = receiver.readChannelRaw(WEAPON_THROTTLE_CHANNEL);
+
+		if (weapon_throttle == 0) {// FAILSAFE FOR WEAPON
+			weapon.setThrottle(1500);
+			Serial.println("!!!WEAPON FAILSAFE!!!");
+			return;
+		}
+
+		if (weapon_throttle > 1450 && weapon_throttle < 1550) {
+			weapon_throttle = 1500; // deadzone
+		}
+
+		Serial.print("Weapon Throttle: ");
+		Serial.println(weapon_throttle);
+		weapon.setThrottle(weapon_throttle);
 	}
 }
 
@@ -80,8 +151,7 @@ void setup() {
 }
 
 void loop() {
-	bool shouldPrint = (millis() - lastPrintTime >= PRINT_INTERVAL_MS);
-	if (shouldPrint) lastPrintTime = millis();
+	bool shouldPrint = (millis() - lastPrintTime >= PRINT_INTERVAL_MS);	if (shouldPrint) lastPrintTime = millis();
 
 	bool armWeapon = (weaponTogglePulseWidth > 1750);
 	bool armLocomotion = (locomotionTogglePulseWidth > 1750);
@@ -91,7 +161,7 @@ void loop() {
 		weapon.enable();
 		Serial.println("Weapon Armed & Enabled");
 	} else if (!armWeapon && weapon.isArmed()) {
-		weapon.setThrottle(1000);
+		weapon.setThrottle(1500); // disable throttle
 		weapon.disarm();
 		weapon.disable();
 		Serial.println("Weapon Disarmed & Disabled");
@@ -102,6 +172,7 @@ void loop() {
 		locomotion.enable();
 		Serial.println("Locomotion Armed & Enabled");
 	} else if (!armLocomotion && locomotion.isArmed()) {
+		locomotion.setThrottle(1500); // disable throttle
 		locomotion.disarm();
 		locomotion.disable();
 		Serial.println("Locomotion Disarmed & Disabled");
@@ -143,36 +214,6 @@ void loop() {
 		}
 	}
 
-	if (locomotion.isEnabled()) {
-		unsigned long locomotion_throttle = receiver.readChannelRaw(LOCOMOTION_THROTTLE_CHANNEL);
-		locomotion_throttle = chokeServoPWM(locomotion_throttle, 1500, PWM_BOUNDARY);
-		if (locomotion_throttle > 1450 && locomotion_throttle < 1550) {
-			locomotion_throttle = 1500; // deadzone
-		}
-		if (shouldPrint) {
-			Serial.print("Locomotion Throttle: ");
-			Serial.println(locomotion_throttle);
-		}
-		locomotion.setThrottle(locomotion_throttle);
-
-		unsigned long locomotion_steering = receiver.readChannelRaw(LOCOMOTION_STEERING_CHANNEL);
-		locomotion_steering = chokeServoPWM(locomotion_steering, 1500, PWM_BOUNDARY);
-		if (locomotion_steering > 1450 && locomotion_steering < 1550) {
-			locomotion_steering = 1500; // deadzone
-		}
-		//if (shouldPrint) {
-		//	Serial.print("Locomotion Steering: ");
-		//	Serial.println(locomotion_steering);
-		//}
-		//locomotion.setSteering(locomotion_steering);
-	}
-
-	if (weapon.isEnabled()) {
-		unsigned long weapon_throttle = receiver.readChannelRaw(WEAPON_THROTTLE_CHANNEL);
-		if (shouldPrint) {
-			Serial.print("Weapon Throttle: ");
-			Serial.println(weapon_throttle);
-		}
-		weapon.setThrottle(weapon_throttle);
-	}
+	setMovement();
+	setWeapon();
 }

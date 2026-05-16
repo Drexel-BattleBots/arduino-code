@@ -13,7 +13,7 @@ void Weapon::arm() {
 }
 
 void Weapon::disarm() {
-	controlServo.writeMicroseconds(1000);
+	controlServo.writeMicroseconds(1500);
 	controlServo.detach();
 	digitalWrite(enablePin, LOW);
 }
@@ -28,7 +28,7 @@ void Weapon::enable() {
 
 void Weapon::disable() {
 	enabled = false;
-	controlServo.writeMicroseconds(1000);
+	controlServo.writeMicroseconds(1500);
 }
 
 bool Weapon::isEnabled() {

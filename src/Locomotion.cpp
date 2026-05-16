@@ -16,10 +16,18 @@ void Shuffler::detach() {
 }
 
 void Shuffler::setThrottle(int value) {
+	if (value == 0) { // Quick fail
+		return;
+	}
+
 	throttleServo.writeMicroseconds(value);
 }
 
 void Shuffler::setSteering(int value) {
+	if (value == 0) { // Quick fail
+		return;
+	}
+
 	steerServo.writeMicroseconds(value);
 }
 
@@ -58,7 +66,7 @@ bool Locomotion::isEnabled() {
 }
 
 void Locomotion::setThrottle(int value) {
-	if (!enabled)
+	if (!enabled || value == 0) // Quick fail for both not being enabled OR trying to set 0;
 		return;
 
 	int leftValue = constrain(value, 1000, 2000);
@@ -70,7 +78,7 @@ void Locomotion::setThrottle(int value) {
 }
 
 void Locomotion::setSteering(int value) {
-	if (!enabled)
+	if (!enabled || value == 0) // Quick fail for both not being enabled OR trying to set 0;
 		return;
 
 	int leftValue = constrain(value, 1000, 2000);
